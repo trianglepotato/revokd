@@ -23,9 +23,9 @@ func Dial(gw, session, token string, rate int64) (net.Conn, io.Reader, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if _, err := fmt.Fprintf(c, "HELLO %s %s\n", session, token); err != nil {
+	if _, werr := fmt.Fprintf(c, "HELLO %s %s\n", session, token); werr != nil {
 		c.Close()
-		return nil, nil, err
+		return nil, nil, werr
 	}
 	_ = c.SetReadDeadline(time.Now().Add(2 * time.Second))
 	r := bufio.NewReader(c)
@@ -59,8 +59,8 @@ type Result struct {
 	CutByRemote bool
 }
 
-// Drain reads until the connection ends or max bytes / deadline is reached.
-func Drain(c net.Conn, r io.Reader, watch, max int64, deadline time.Duration) Result {
+// Drain reads until the connection ends or maxBytes / deadline is reached.
+func Drain(c net.Conn, r io.Reader, watch, maxBytes int64, deadline time.Duration) Result {
 	var res Result
 	buf := make([]byte, 32*1024)
 	_ = c.SetReadDeadline(time.Now().Add(deadline))
@@ -70,7 +70,7 @@ func Drain(c net.Conn, r io.Reader, watch, max int64, deadline time.Duration) Re
 		if watch > 0 && res.CrossedAt.IsZero() && res.Total >= watch {
 			res.CrossedAt = time.Now()
 		}
-		if max > 0 && res.Total >= max {
+		if maxBytes > 0 && res.Total >= maxBytes {
 			res.ClosedAt = time.Now()
 			c.Close()
 			return res
@@ -78,7 +78,7 @@ func Drain(c net.Conn, r io.Reader, watch, max int64, deadline time.Duration) Re
 		if err != nil {
 			res.ClosedAt = time.Now()
 			var ne net.Error
-			res.CutByRemote = !(errors.As(err, &ne) && ne.Timeout())
+			res.CutByRemote = !errors.As(err, &ne) || !ne.Timeout()
 			c.Close()
 			return res
 		}

@@ -42,22 +42,22 @@ type trial struct {
 
 type summary struct {
 	Config struct {
+		Measured    string `json:"measured_at"`
+		Environment string `json:"environment"`
+		Window      string `json:"window"`
+		ReportEvery string `json:"report_every"`
 		Trials      int    `json:"trials"`
 		ExfilRate   int64  `json:"exfil_rate_bytes_per_sec"`
 		NormalRate  int64  `json:"normal_rate_bytes_per_sec"`
 		Threshold   int64  `json:"threshold_bytes"`
-		Window      string `json:"window"`
-		ReportEvery string `json:"report_every"`
 		Gateways    int    `json:"gateways"`
-		Measured    string `json:"measured_at"`
-		Environment string `json:"environment"`
 	} `json:"config"`
+	ReconnectDenied string  `json:"reconnect_denied"`
 	DetectToAllAck  stats   `json:"detect_to_all_ack_ms"`
 	CrossToCut      stats   `json:"threshold_cross_to_cut_ms"`
 	OvershootMB     stats   `json:"overshoot_mb"`
-	ReconnectDenied string  `json:"reconnect_denied"`
-	FalsePositives  int     `json:"false_positives"`
 	Trials          []trial `json:"trials"`
+	FalsePositives  int     `json:"false_positives"`
 }
 
 type stats struct {
@@ -77,6 +77,14 @@ func pct(xs []float64) stats {
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// run holds every deferred close so main can exit through a single, orderly
+// return instead of calling log.Fatal past open resources.
+func run() error {
 	trials := flag.Int("trials", 30, "number of exfiltration trials")
 	rate := flag.Int64("rate", 20<<20, "exfil download rate (bytes/sec)")
 	normal := flag.Int64("normal-rate", 512<<10, "normal session rate (bytes/sec)")
@@ -92,27 +100,42 @@ func main() {
 	defer cancel()
 
 	up, err := upstream.Start("127.0.0.1:0")
-	must(err)
+	if err != nil {
+		return err
+	}
 	af, err := os.Create(*audit)
-	must(err)
+	if err != nil {
+		return err
+	}
 	defer af.Close()
 
 	plane := controlplane.New(controlplane.Config{
 		Listen: "127.0.0.1:0", Key: ctlKey, Window: *window,
 		ThresholdBytes: *threshold, Audit: af,
 	})
-	must(plane.Start(ctx))
-	mk := func(id string) *gateway.Gateway {
+	if err := plane.Start(ctx); err != nil {
+		return err
+	}
+	mk := func(id string) (*gateway.Gateway, error) {
 		g := gateway.New(gateway.Config{
 			ID: id, Listen: "127.0.0.1:0", Upstream: up.Addr(), Control: plane.Addr(),
 			Key: ctlKey, TokenKey: tokenKey, ReportEvery: *report,
 		})
-		must(g.Start(ctx))
-		return g
+		if err := g.Start(ctx); err != nil {
+			return nil, err
+		}
+		return g, nil
 	}
-	gwA, gwB := mk("gw-a"), mk("gw-b")
+	gwA, err := mk("gw-a")
+	if err != nil {
+		return err
+	}
+	gwB, err := mk("gw-b")
+	if err != nil {
+		return err
+	}
 	if !plane.WaitGateways(2, 3*time.Second) {
-		log.Fatal("gateways did not register")
+		return errors.New("gateways did not register")
 	}
 	time.Sleep(300 * time.Millisecond)
 
@@ -130,23 +153,27 @@ func main() {
 
 		// normal user on the other gateway during the whole trial
 		nc, nr, err := client.Dial(gwB.Addr(), nsid, control.SessionToken(tokenKey, nsid), *normal)
-		must(err)
+		if err != nil {
+			return err
+		}
 		normalDone := make(chan client.Result, 1)
 		go func() { normalDone <- client.Drain(nc, nr, 0, 0, 1500*time.Millisecond) }()
 
 		c, r, err := client.Dial(gwA.Addr(), sid, control.SessionToken(tokenKey, sid), *rate)
-		must(err)
+		if err != nil {
+			return err
+		}
 		res := client.Drain(c, r, *threshold, 0, 10*time.Second)
 
 		var rec controlplane.Record
 		select {
 		case rec = <-plane.Records():
 		case <-time.After(3 * time.Second):
-			log.Fatalf("trial %d: no revoke record", i)
+			return fmt.Errorf("trial %d: no revoke record", i)
 		}
 		if rec.SessionID != sid {
 			s.FalsePositives++
-			log.Fatalf("trial %d: revoked %s instead of %s", i, rec.SessionID, sid)
+			return fmt.Errorf("trial %d: revoked %s instead of %s", i, rec.SessionID, sid)
 		}
 		if nres := <-normalDone; nres.CutByRemote {
 			s.FalsePositives++
@@ -176,8 +203,13 @@ func main() {
 	s.DetectToAllAck, s.CrossToCut, s.OvershootMB = pct(d2a), pct(c2c), pct(over)
 	s.ReconnectDenied = fmt.Sprintf("%d/%d", denied, *trials)
 
-	b, _ := json.MarshalIndent(s, "", "  ")
-	must(os.WriteFile(*out, b, 0o644))
+	b, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(*out, b, 0o644); err != nil {
+		return err
+	}
 
 	fmt.Printf("trials=%d  exfil=%.0f MB/s  threshold=%.0f MB/%s  report=%s  gateways=2 (active-active)\n",
 		*trials, float64(*rate)/(1<<20), float64(*threshold)/(1<<20), *window, *report)
@@ -188,12 +220,7 @@ func main() {
 	row("overshoot past threshold (MB)", s.OvershootMB)
 	fmt.Printf("reconnect after revoke denied: %s   false positives: %d\n", s.ReconnectDenied, s.FalsePositives)
 	fmt.Printf("wrote %s and %s\n", *out, *audit)
+	return nil
 }
 
 func ms(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }
-
-func must(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}

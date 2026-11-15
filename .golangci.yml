@@ -1,0 +1,68 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - gocritic
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - opinionated
+    govet:
+      enable-all: true
+      disable:
+        # fieldalignment is a memory-layout micro-optimization, not an
+        # idiomatic-Go/code-smell concern — would force reordering every
+        # exported struct for marginal padding savings.
+        - fieldalignment
+        # shadow flags `if err := f(); err != nil` style reuse of `err`,
+        # which Effective Go itself uses throughout — enabling it fights
+        # the idiom it's meant to enforce.
+        - shadow
+    revive:
+      rules:
+        - name: exported
+        - name: error-strings
+        - name: error-naming
+        - name: if-return
+        - name: receiver-naming
+        - name: var-naming
+        - name: indent-error-flow
+        - name: unreachable-code
+        - name: unused-parameter
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gocritic
+          - revive
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
