@@ -27,6 +27,7 @@ import (
 
 	"github.com/trianglepotato/revokd/internal/control"
 	"github.com/trianglepotato/revokd/internal/policy"
+	"github.com/trianglepotato/revokd/kit/envelope"
 )
 
 // Config configures a gateway.
@@ -60,7 +61,7 @@ type Gateway struct {
 	cfg   Config
 	store *policy.Store
 	ln    net.Listener
-	ctrl  *control.Conn
+	ctrl  *envelope.Conn
 
 	mu       sync.Mutex
 	flows    map[string]map[*flow]struct{}
@@ -100,7 +101,7 @@ func (g *Gateway) Start(ctx context.Context) error {
 		_ = ln.Close()
 		return fmt.Errorf("dial control: %w", err)
 	}
-	g.ctrl = control.NewConn(c, g.cfg.Key)
+	g.ctrl = envelope.NewConn(c, g.cfg.Key)
 	if err := g.ctrl.Send(control.TypeHello, control.Hello{GatewayID: g.cfg.ID}); err != nil {
 		return err
 	}
@@ -298,7 +299,7 @@ func (g *Gateway) controlLoop() {
 			g.lastHB.Store(time.Now().UnixNano())
 		case control.TypeEvent:
 			var ev control.Event
-			if err := control.Decode(env, &ev); err != nil {
+			if err := envelope.Decode(env, &ev); err != nil {
 				continue
 			}
 			now := time.Now()

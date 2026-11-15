@@ -1,22 +1,17 @@
-// Package control implements the authenticated control channel (sideband)
-// between the control plane and VPN gateways.
+// Package control defines the messages exchanged on the control channel
+// (sideband) between the control plane and VPN gateways, and the
+// session-token derivation clients use to authenticate to a gateway.
 //
 // The data path (tunnel traffic) and the control path are separate TCP
-// connections. Every control message is wrapped in an Envelope whose MAC
-// covers the message type and payload, so a gateway never acts on a revoke
-// (or heartbeat) it cannot authenticate.
+// connections. Messages travel inside kit/envelope frames, whose MAC covers
+// the message type and payload, so a gateway never acts on a revoke (or
+// heartbeat) it cannot authenticate.
 package control
 
 import (
-	"bufio"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
-	"errors"
-	"net"
-	"sync"
 	"time"
 )
 
@@ -80,91 +75,6 @@ type Heartbeat struct {
 	At time.Time `json:"at"`
 }
 
-// Envelope is the authenticated wire frame (one JSON object per line).
-type Envelope struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
-	MAC     string          `json:"mac"`
-}
-
-// ErrBadMAC is returned when a frame fails authentication.
-var ErrBadMAC = errors.New("control: bad MAC")
-
-func sign(key []byte, typ string, payload []byte) string {
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(typ))
-	h.Write([]byte{0})
-	h.Write(payload)
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-// Seal builds an authenticated envelope.
-func Seal(key []byte, typ string, v any) (Envelope, error) {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return Envelope{}, err
-	}
-	return Envelope{Type: typ, Payload: b, MAC: sign(key, typ, b)}, nil
-}
-
-// Open verifies an envelope and decodes its payload into v.
-func Open(key []byte, env Envelope, v any) error {
-	want := sign(key, env.Type, env.Payload)
-	if !hmac.Equal([]byte(want), []byte(env.MAC)) {
-		return ErrBadMAC
-	}
-	if v == nil {
-		return nil
-	}
-	return json.Unmarshal(env.Payload, v)
-}
-
-// Conn is a control-channel connection. Send is safe for concurrent use;
-// Recv must be called from a single goroutine.
-type Conn struct {
-	c   net.Conn
-	key []byte
-	dec *json.Decoder
-	wmu sync.Mutex
-	enc *json.Encoder
-}
-
-// NewConn wraps a net.Conn as an authenticated control channel.
-func NewConn(c net.Conn, key []byte) *Conn {
-	return &Conn{c: c, key: key, dec: json.NewDecoder(bufio.NewReader(c)), enc: json.NewEncoder(c)}
-}
-
-// Send seals and writes one message.
-func (c *Conn) Send(typ string, v any) error {
-	env, err := Seal(c.key, typ, v)
-	if err != nil {
-		return err
-	}
-	c.wmu.Lock()
-	defer c.wmu.Unlock()
-	_ = c.c.SetWriteDeadline(time.Now().Add(2 * time.Second))
-	return c.enc.Encode(env)
-}
-
-// Recv reads and authenticates the next frame. The caller decodes the payload
-// with Decode once it has switched on env.Type.
-func (c *Conn) Recv() (Envelope, error) {
-	var env Envelope
-	if err := c.dec.Decode(&env); err != nil {
-		return Envelope{}, err
-	}
-	if err := Open(c.key, env, nil); err != nil {
-		return Envelope{}, err
-	}
-	return env, nil
-}
-
-// Decode unmarshals an already-authenticated payload.
-func Decode(env Envelope, v any) error { return json.Unmarshal(env.Payload, v) }
-
-// Close closes the underlying connection.
-func (c *Conn) Close() error { return c.c.Close() }
-
 // SessionToken derives the credential a client presents to a gateway for a
 // session. In production this would be a short-lived token from the IdP; here
 // it is an HMAC so gateways can verify it without a round trip.
@@ -172,11 +82,4 @@ func SessionToken(key []byte, sessionID string) string {
 	h := hmac.New(sha256.New, key)
 	h.Write([]byte("session:" + sessionID))
 	return hex.EncodeToString(h.Sum(nil))
-}
-
-// NewID returns a random 128-bit identifier.
-func NewID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	return hex.EncodeToString(b[:])
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/trianglepotato/revokd/internal/controlplane"
 	"github.com/trianglepotato/revokd/internal/gateway"
 	"github.com/trianglepotato/revokd/internal/upstream"
+	"github.com/trianglepotato/revokd/kit/idgen"
 )
 
 type trial struct {
@@ -86,7 +87,7 @@ func main() {
 	audit := flag.String("audit", "audit.log", "audit log (JSON lines)")
 	flag.Parse()
 
-	ctlKey, tokenKey := []byte(control.NewID()), []byte(control.NewID())
+	ctlKey, tokenKey := []byte(idgen.New()), []byte(idgen.New())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

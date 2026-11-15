@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/trianglepotato/revokd/internal/control"
+	"github.com/trianglepotato/revokd/kit/envelope"
+	"github.com/trianglepotato/revokd/kit/idgen"
 )
 
 // Config configures the control plane.
@@ -53,7 +55,7 @@ type Plane struct {
 	ln  net.Listener
 
 	mu      sync.Mutex
-	gws     map[string]*control.Conn
+	gws     map[string]*envelope.Conn
 	latest  map[string]map[string]int64 // session -> gateway -> cumulative bytes
 	samples map[string][]sample         // session -> totals over time
 	epochs  map[string]uint64
@@ -76,7 +78,7 @@ func New(cfg Config) *Plane {
 	}
 	return &Plane{
 		cfg:     cfg,
-		gws:     map[string]*control.Conn{},
+		gws:     map[string]*envelope.Conn{},
 		latest:  map[string]map[string]int64{},
 		samples: map[string][]sample{},
 		epochs:  map[string]uint64{},
@@ -139,14 +141,14 @@ func (p *Plane) WaitGateways(n int, timeout time.Duration) bool {
 }
 
 func (p *Plane) serveGateway(c net.Conn) {
-	cc := control.NewConn(c, p.cfg.Key)
+	cc := envelope.NewConn(c, p.cfg.Key)
 	env, err := cc.Recv()
 	if err != nil || env.Type != control.TypeHello {
 		_ = c.Close()
 		return
 	}
 	var h control.Hello
-	if control.Decode(env, &h) != nil || h.GatewayID == "" {
+	if envelope.Decode(env, &h) != nil || h.GatewayID == "" {
 		_ = c.Close()
 		return
 	}
@@ -171,12 +173,12 @@ func (p *Plane) serveGateway(c net.Conn) {
 		switch env.Type {
 		case control.TypeUsage:
 			var u control.Usage
-			if control.Decode(env, &u) == nil {
+			if envelope.Decode(env, &u) == nil {
 				p.onUsage(u)
 			}
 		case control.TypeAck:
 			var a control.Ack
-			if control.Decode(env, &a) == nil {
+			if envelope.Decode(env, &a) == nil {
 				p.onAck(a)
 			}
 		}
@@ -244,7 +246,7 @@ func (p *Plane) revoke(sid, reason string, detectedAt time.Time) string {
 	p.epochs[sid]++
 	now := time.Now()
 	ev := control.Event{
-		ID: control.NewID(), SessionID: sid, Epoch: p.epochs[sid],
+		ID: idgen.New(), SessionID: sid, Epoch: p.epochs[sid],
 		Action: control.ActionRevoke, Reason: reason,
 		IssuedAt: now, ExpiresAt: now.Add(p.cfg.EventTTL),
 	}
@@ -254,7 +256,7 @@ func (p *Plane) revoke(sid, reason string, detectedAt time.Time) string {
 		Acks: map[string]control.Ack{},
 	}
 	p.pending[ev.ID] = rec
-	targets := make([]*control.Conn, 0, len(p.gws))
+	targets := make([]*envelope.Conn, 0, len(p.gws))
 	for _, c := range p.gws {
 		targets = append(targets, c)
 	}
@@ -271,7 +273,7 @@ func (p *Plane) revoke(sid, reason string, detectedAt time.Time) string {
 // Resend re-delivers an event (used to exercise idempotency).
 func (p *Plane) Resend(ev control.Event) {
 	p.mu.Lock()
-	targets := make([]*control.Conn, 0, len(p.gws))
+	targets := make([]*envelope.Conn, 0, len(p.gws))
 	for _, c := range p.gws {
 		targets = append(targets, c)
 	}
@@ -339,7 +341,7 @@ func (p *Plane) heartbeatLoop(ctx context.Context) {
 		case <-t.C:
 		}
 		p.mu.Lock()
-		targets := make([]*control.Conn, 0, len(p.gws))
+		targets := make([]*envelope.Conn, 0, len(p.gws))
 		for _, c := range p.gws {
 			targets = append(targets, c)
 		}

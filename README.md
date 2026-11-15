@@ -42,7 +42,9 @@ gw-a, gw-b <--(제어 채널, HMAC 서명)--> control plane (탐지기)
 
 | 패키지 | 역할 |
 |---|---|
-| `internal/control` | 제어 채널. 모든 메시지를 HMAC-SHA256으로 서명하고, 메시지 종류까지 서명에 포함해 다른 종류로 재사용하지 못하게 함 |
+| `kit/envelope` | 범용 인증 프레이밍. 메시지 타입+페이로드를 HMAC-SHA256으로 서명해, 다른 메시지 종류로 재사용(replay)하지 못하게 함. 이 도메인(VPN/세션)을 전혀 모르는 공용 모듈 |
+| `kit/idgen` | 범용 랜덤 ID 생성기 |
+| `internal/control` | 제어 채널에서 주고받는 메시지 정의(Event/Hello/Ack/Usage/Heartbeat)와 세션 토큰 파생. `kit/envelope` 위에 도메인 스키마만 얹음 |
 | `internal/policy` | 게이트웨이의 세션 정책 상태. 이벤트 ID로 중복을 무시하고, 세션별 단조 증가 epoch로 늦게 도착한 옛 이벤트가 새 결정을 덮지 못하게 함 |
 | `internal/gateway` | 데이터 경로. 세션별 연결(flow)과 전송량을 추적하고, 철회를 받으면 기존 연결을 닫은 뒤 ACK. 제어 채널 lease가 끊기면 새 연결을 거부(fail-closed) |
 | `internal/controlplane` | 모든 게이트웨이의 사용량을 합산해 슬라이딩 윈도우로 탐지하고, 철회 이벤트를 전 게이트웨이에 보내 ACK를 모음. 감사 로그 기록 |
