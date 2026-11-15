@@ -1,0 +1,272 @@
+{
+  "config": {
+    "trials": 30,
+    "exfil_rate_bytes_per_sec": 20971520,
+    "normal_rate_bytes_per_sec": 524288,
+    "threshold_bytes": 5242880,
+    "window": "2s",
+    "report_every": "10ms",
+    "gateways": 2,
+    "measured_at": "2026-11-15T18:43:04+09:00",
+    "environment": "single host, loopback TCP, Go go1.24.7"
+  },
+  "detect_to_all_ack_ms": {
+    "p50": 0.182,
+    "p95": 0.277,
+    "max": 0.339
+  },
+  "threshold_cross_to_cut_ms": {
+    "p50": 6.236,
+    "p95": 10.721,
+    "max": 10.811
+  },
+  "overshoot_mb": {
+    "p50": 0.125,
+    "p95": 0.203125,
+    "max": 0.21875
+  },
+  "reconnect_denied": "30/30",
+  "false_positives": 0,
+  "trials": [
+    {
+      "session": "exfil-00",
+      "detect_to_all_ack_ms": 0.339,
+      "threshold_cross_to_cut_ms": 7.452,
+      "overshoot_bytes": 163840,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-01",
+      "detect_to_all_ack_ms": 0.169,
+      "threshold_cross_to_cut_ms": 4.935,
+      "overshoot_bytes": 114688,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-02",
+      "detect_to_all_ack_ms": 0.173,
+      "threshold_cross_to_cut_ms": 2.885,
+      "overshoot_bytes": 49152,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-03",
+      "detect_to_all_ack_ms": 0.123,
+      "threshold_cross_to_cut_ms": 9.612,
+      "overshoot_bytes": 212992,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-04",
+      "detect_to_all_ack_ms": 0.21,
+      "threshold_cross_to_cut_ms": 8.968,
+      "overshoot_bytes": 180224,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-05",
+      "detect_to_all_ack_ms": 0.234,
+      "threshold_cross_to_cut_ms": 3.643,
+      "overshoot_bytes": 81920,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-06",
+      "detect_to_all_ack_ms": 0.134,
+      "threshold_cross_to_cut_ms": 2.551,
+      "overshoot_bytes": 65536,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-07",
+      "detect_to_all_ack_ms": 0.258,
+      "threshold_cross_to_cut_ms": 10.811,
+      "overshoot_bytes": 229376,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-08",
+      "detect_to_all_ack_ms": 0.251,
+      "threshold_cross_to_cut_ms": 8.834,
+      "overshoot_bytes": 180224,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-09",
+      "detect_to_all_ack_ms": 0.196,
+      "threshold_cross_to_cut_ms": 6.236,
+      "overshoot_bytes": 131072,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-10",
+      "detect_to_all_ack_ms": 0.176,
+      "threshold_cross_to_cut_ms": 4.997,
+      "overshoot_bytes": 114688,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-11",
+      "detect_to_all_ack_ms": 0.236,
+      "threshold_cross_to_cut_ms": 2.755,
+      "overshoot_bytes": 65536,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-12",
+      "detect_to_all_ack_ms": 0.182,
+      "threshold_cross_to_cut_ms": 2.538,
+      "overshoot_bytes": 49152,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-13",
+      "detect_to_all_ack_ms": 0.226,
+      "threshold_cross_to_cut_ms": 9.583,
+      "overshoot_bytes": 196608,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-14",
+      "detect_to_all_ack_ms": 0.173,
+      "threshold_cross_to_cut_ms": 7.909,
+      "overshoot_bytes": 147456,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-15",
+      "detect_to_all_ack_ms": 0.225,
+      "threshold_cross_to_cut_ms": 4.803,
+      "overshoot_bytes": 98304,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-16",
+      "detect_to_all_ack_ms": 0.214,
+      "threshold_cross_to_cut_ms": 2.752,
+      "overshoot_bytes": 49152,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-17",
+      "detect_to_all_ack_ms": 0.155,
+      "threshold_cross_to_cut_ms": 9.815,
+      "overshoot_bytes": 212992,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-18",
+      "detect_to_all_ack_ms": 0.175,
+      "threshold_cross_to_cut_ms": 8.791,
+      "overshoot_bytes": 180224,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-19",
+      "detect_to_all_ack_ms": 0.277,
+      "threshold_cross_to_cut_ms": 6.302,
+      "overshoot_bytes": 131072,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-20",
+      "detect_to_all_ack_ms": 0.151,
+      "threshold_cross_to_cut_ms": 3.627,
+      "overshoot_bytes": 49152,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-21",
+      "detect_to_all_ack_ms": 0.136,
+      "threshold_cross_to_cut_ms": 9.462,
+      "overshoot_bytes": 196608,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-22",
+      "detect_to_all_ack_ms": 0.271,
+      "threshold_cross_to_cut_ms": 8.411,
+      "overshoot_bytes": 163840,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-23",
+      "detect_to_all_ack_ms": 0.225,
+      "threshold_cross_to_cut_ms": 6.169,
+      "overshoot_bytes": 147456,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-24",
+      "detect_to_all_ack_ms": 0.172,
+      "threshold_cross_to_cut_ms": 4.94,
+      "overshoot_bytes": 98304,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-25",
+      "detect_to_all_ack_ms": 0.164,
+      "threshold_cross_to_cut_ms": 2.798,
+      "overshoot_bytes": 49152,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-26",
+      "detect_to_all_ack_ms": 0.141,
+      "threshold_cross_to_cut_ms": 10.721,
+      "overshoot_bytes": 212992,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-27",
+      "detect_to_all_ack_ms": 0.112,
+      "threshold_cross_to_cut_ms": 7.337,
+      "overshoot_bytes": 147456,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-28",
+      "detect_to_all_ack_ms": 0.249,
+      "threshold_cross_to_cut_ms": 5.03,
+      "overshoot_bytes": 114688,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    },
+    {
+      "session": "exfil-29",
+      "detect_to_all_ack_ms": 0.163,
+      "threshold_cross_to_cut_ms": 2.773,
+      "overshoot_bytes": 49152,
+      "flows_closed": 1,
+      "reconnect_denied": true
+    }
+  ]
+}
