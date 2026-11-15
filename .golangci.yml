@@ -1,68 +1,65 @@
-version: "2"
+run:
+  timeout: 5m
+
 linters:
-  default: none
+  disable-all: true
   enable:
-    - errcheck
-    - gocritic
-    - govet
-    - ineffassign
-    - misspell
-    - revive
-    - staticcheck
-    - unconvert
-    - unparam
-    - unused
-  settings:
-    gocritic:
-      enabled-tags:
-        - diagnostic
-        - style
-        - opinionated
-    govet:
-      enable-all: true
-      disable:
-        # fieldalignment is a memory-layout micro-optimization, not an
-        # idiomatic-Go/code-smell concern — would force reordering every
-        # exported struct for marginal padding savings.
-        - fieldalignment
-        # shadow flags `if err := f(); err != nil` style reuse of `err`,
-        # which Effective Go itself uses throughout — enabling it fights
-        # the idiom it's meant to enforce.
-        - shadow
-    revive:
-      rules:
-        - name: exported
-        - name: error-strings
-        - name: error-naming
-        - name: if-return
-        - name: receiver-naming
-        - name: var-naming
-        - name: indent-error-flow
-        - name: unreachable-code
-        - name: unused-parameter
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    rules:
-      - linters:
-          - gocritic
-          - revive
-        path: _test\.go
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  enable:
+    # gofmt / goimports: enforce `gofmt`-clean, import-grouped code.
     - gofmt
     - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+    # go vet, staticcheck, gosimple, unused, ineffassign, errcheck: catch real
+    # bugs (nil derefs, unreachable code, unchecked errors, dead assignments).
+    - govet
+    - staticcheck
+    - gosimple
+    - unused
+    - ineffassign
+    - errcheck
+    # revive: Effective Go / idiomatic-Go style (naming, receiver names,
+    # exported-doc comments, error-string conventions, early return, etc.)
+    - revive
+    # gocritic: broader code-smell detector (redundant conditions, dupe
+    # branches, unnecessary conversions, non-idiomatic constructs).
+    - gocritic
+    # unconvert / unparam: unnecessary type conversions, unused parameters.
+    - unconvert
+    - unparam
+    - misspell
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      # fieldalignment is a memory-layout micro-optimization, not an
+      # idiomatic-Go/code-smell concern — would force reordering every
+      # exported struct for marginal padding savings.
+      - fieldalignment
+      # shadow flags `if err := f(); err != nil` style reuse of `err`,
+      # which Effective Go itself uses throughout — enabling it fights
+      # the idiom it's meant to enforce.
+      - shadow
+  revive:
+    rules:
+      - name: exported
+      - name: error-strings
+      - name: error-naming
+      - name: if-return
+      - name: receiver-naming
+      - name: var-naming
+      - name: indent-error-flow
+      - name: unreachable-code
+      - name: unused-parameter
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - opinionated
+
+issues:
+  exclude-rules:
+    # Test files commonly use t.Fatal and table-driven subtests that don't
+    # need every revive/gocritic nitpick.
+    - path: _test\.go
+      linters:
+        - revive
+        - gocritic
